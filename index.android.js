@@ -85,6 +85,50 @@ class ReactNativePermissions {
     )
   }
 
+  requestWithAlwaysShowRationale = (permission, { rationale }) => {
+    const androidPermission = permissionTypes[permission]
+
+    if (!androidPermission) {
+      return Promise.reject(
+        `ReactNativePermissions: ${
+          permission
+        } is not a valid permission type on Android`,
+      )
+    }
+
+    return this._androidRequestWithAlwaysShowRationale(
+      androidPermission,
+      rationale,
+    ).then(result => {
+      // PermissionsAndroid.request() to native module resolves to boolean
+      // rather than string if running on OS version prior to Android M
+      if (typeof result === 'boolean') {
+        return result ? 'authorized' : 'denied'
+      }
+
+      return setDidAskOnce(permission).then(() => RESULTS[result])
+    })
+  }
+
+  async _androidRequestWithAlwaysShowRationale(
+    permission: string,
+    rationale?: Rationale,
+  ): Promise<PermissionStatus> {
+    if (rationale) {
+      return new Promise((resolve, reject) => {
+        NativeModules.DialogManagerAndroid.showAlert(
+          rationale,
+          () => reject(new Error('Error showing rationale')),
+          () =>
+            resolve(
+              NativeModules.PermissionsAndroid.requestPermission(permission),
+            ),
+        )
+      })
+    }
+    return NativeModules.PermissionsAndroid.requestPermission(permission)
+  }
+
   checkMultiple = permissions =>
     Promise.all(permissions.map(this.check)).then(result =>
       result.reduce((acc, value, index) => {

@@ -73,6 +73,11 @@ class ReactNativePermissions {
     )
   }
 
+  // For Android
+  requestWithAlwaysShowRationale = (permission, options) => {
+    this.request(permission, options)
+  }
+
   checkMultiple = permissions =>
     Promise.all(permissions.map(permission => this.check(permission))).then(
       result =>
